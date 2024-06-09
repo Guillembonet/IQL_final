@@ -1,0 +1,3 @@
+*.Rproj
+.venv/
+.Rproj.user/

@@ -1,0 +1,23 @@
+```{r}
+
+library(ggplot2)
+library(ggrepel)
+
+csv_files <- list.files(path="../data/preprocessed",pattern = ".*.csv$")
+for (file in csv_files){
+    data <- read.csv(paste("../data/preprocessed/",file,sep=""))
+
+    n_rows <- nrow(data)
+    indices <- round(seq(1, n_rows, length.out = 100))
+    data_subset <- data[indices, ]
+    label_data <- data_subset[sample(nrow(data_subset), 15), ]
+
+    p <- ggplot(data_subset, aes(x=Frequency.rank, y=Length.of.characters, label=Word)) +
+        geom_point() +
+        geom_text_repel(data=label_data, aes(label=Word)) +
+        labs(x="Frequency Rank", y="Length of Characters", title=file) +
+        theme_minimal()
+
+    print(p)
+}
+```
