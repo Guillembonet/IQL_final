@@ -1,3 +1,4 @@
 *.Rproj
 .venv/
 .Rproj.user/
+.DS_Store
