@@ -2,3 +2,5 @@
 .venv/
 .Rproj.user/
 .DS_Store
+.RData
+.Rhistory

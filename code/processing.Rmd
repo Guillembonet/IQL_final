@@ -1,23 +1,166 @@
 ```{r}
-
 library(ggplot2)
 library(ggrepel)
+library(RobustLinearReg)
+library(showtext)
+font_add("Arial Unicode", "/Library/Fonts/Arial Unicode.ttf")  # Use the actual file path
+showtext_auto()
 
-csv_files <- list.files(path="../data/preprocessed",pattern = ".*.csv$")
-for (file in csv_files){
-    data <- read.csv(paste("../data/preprocessed/",file,sep=""))
+get_binned_data <- function(data){
+    # sort data by x ascending
+    sorted_data <- data[order(data$x, decreasing = FALSE),]
+
+    b <- 1.3
+
+    binned_x <- c()
+    binned_y <- c()
+    
+    last_index <- floor(logb(sorted_data$x[1], base=b))
+    bin <- c()
+    for (i in seq_along(sorted_data$x)) {
+        current_index <- floor(logb(sorted_data$x[i], base=b))
+        if (current_index == last_index) {
+            bin <- c(bin, sorted_data$y[i])
+        } else {
+            binned_x <- c(binned_x, sqrt( ( b^last_index ) * ( b^( last_index+1 ) ) ))
+            median <- median(bin)
+            binned_y <- c(binned_y, median)
+            last_index <- current_index
+            bin <- c(sorted_data$y[i])
+        }
+    }
+    
+    binned_x <- c(binned_x, sqrt( ( b^last_index ) * ( b^( last_index+1 ) ) ))
+    binned_y <- c(binned_y, median(bin))
+
+    binned_data <- data.frame(x = binned_x, y = binned_y)
+    
+    return (binned_data)
+}
+
+get_linear_regression <- function(binned_data){
+    ln_data <- data.frame(
+        x = log(binned_data$x),
+        y = binned_data$y
+    )
+    theilsen_model <- theil_sen_regression(y ~ x, data = ln_data)
+
+    print(summary(theilsen_model))
+
+    predicted_x <- c(floor(min(ln_data$x)):ceiling(max(ln_data$x)))
+    predicted_y <- predict(theilsen_model, newdata = data.frame(x = predicted_x))
+
+    predicted_data <- data.frame(
+        x = predicted_x,
+        y = predicted_y
+    )
+
+    return(predicted_data)
+}
+
+process_data <- function(data, xLabel, yLabel, title, binning){
+    binned_data <- get_binned_data(data)
+    lr_data <- get_linear_regression(binned_data)
 
     n_rows <- nrow(data)
-    indices <- round(seq(1, n_rows, length.out = 100))
-    data_subset <- data[indices, ]
-    label_data <- data_subset[sample(nrow(data_subset), 15), ]
+    indices <- round(seq(1, n_rows, length.out = 15))
+    label_data <- data[indices, ]
 
-    p <- ggplot(data_subset, aes(x=Frequency.rank, y=Length.of.characters, label=Word)) +
-        geom_point() +
-        geom_text_repel(data=label_data, aes(label=Word)) +
-        labs(x="Frequency Rank", y="Length of Characters", title=file) +
+    p <- ggplot() +
+        geom_point(data=data, aes(x=log(x), y=y)) +
+        geom_label_repel(data=label_data, aes(label=word, x=log(x), y=y), family="Arial Unicode",
+                  label.size = NA, label.padding=.1, na.rm=TRUE, fill = alpha(c("white"),0.5)) +
+        geom_point(data = binned_data, aes(x=log(x), y=y), color="red") +
+        geom_line(data = lr_data, aes(x=x, y=y)) +
+        ylim(0, NA) +
+        labs(x=xLabel, y=yLabel, title=title) +
         theme_minimal()
 
     print(p)
+}
+
+languages_data <- read.csv("../data/languages.csv",sep=";")
+
+get_language <- function(code){
+    return(languages_data[languages_data$Code == code,])
+}
+
+csv_files <- list.files(path="../data/preprocessed",pattern = ".*.csv$")
+for (file in csv_files){
+    preprocessed_data <- read.csv(paste("../data/preprocessed/",file,sep=""))
+    
+    filename <- sub("\\.csv$", "", file)
+    filename_parts <- strsplit(filename, "_")[[1]]
+    language_code <- filename_parts[1]
+    source <- toupper(filename_parts[2])
+    type <- ""
+    if (length(filename_parts) >= 3){
+        type <- filename_parts[2]
+        source <- toupper(filename_parts[3])
+    }
+
+    language <- get_language(language_code)
+
+    data <- data.frame(
+        x = preprocessed_data$Frequency.rank,
+        y = preprocessed_data$Length.of.characters,
+        word = preprocessed_data$Word
+    )
+
+
+    title <- paste(language$Language, "(l ~ log i) based on character length", paste("(source: ", source, ")", sep=""))
+    if (type != ""){
+        title <- paste(language$Language, "(l ~ log i) based on character length", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+    }
+
+    print(title)
+    process_data(data, "frequency rank", "length of characters", title, TRUE)
+
+    data <- data.frame(
+        x = preprocessed_data$Relative.frequency * 1000000,
+        y = preprocessed_data$Length.of.characters,
+        word = preprocessed_data$Word
+    )
+
+    title <- paste(language$Language, "(l ~ -log p) based on character length", paste("(source: ", source, ")", sep=""))
+    if (type != ""){
+        title <- paste(language$Language, "(l ~ -log p) based on character length", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+    }
+
+    print(title)
+    process_data(data, "relative frequency", "length of characters", title, FALSE)
+
+    # Analysis based on duration
+    if (!("Median.duration" %in% names(preprocessed_data))) {
+        next
+    }
+
+    data <- data.frame(
+        x = preprocessed_data$Frequency.rank,
+        y = preprocessed_data$Median.duration * 1000,
+        word = preprocessed_data$Word
+    )
+
+    title <- paste(language$Language, "(l ~ log i) based on duration", paste("(source: ", source, ")", sep=""))
+    if (type != ""){
+        title <- paste(language$Language, "(l ~ log i) based on duration", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+    }
+
+    print(title)
+    process_data(data, "frequency rank", "duration", title)
+
+    data <- data.frame(
+        x = preprocessed_data$Relative.frequency * 1000000,
+        y = preprocessed_data$Median.duration * 1000,
+        word = preprocessed_data$Word
+    )
+
+    title <- paste(language$Language, "(l ~ -log p) based on duration", paste("(source: ", source, ")", sep=""))
+    if (type != ""){
+        title <- paste(language$Language, "(l ~ -log p) based on duration", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+    }
+
+    print(title)
+    process_data(data, "relative frequency", "duration", title)
 }
 ```
