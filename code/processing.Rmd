@@ -137,7 +137,7 @@ for (file in csv_files){
 
     data <- data.frame(
         x = preprocessed_data$Frequency.rank,
-        y = preprocessed_data$Median.duration * 1000,
+        y = preprocessed_data$Median.duration,
         word = preprocessed_data$Word
     )
 
@@ -151,7 +151,7 @@ for (file in csv_files){
 
     data <- data.frame(
         x = preprocessed_data$Relative.frequency * 1000000,
-        y = preprocessed_data$Median.duration * 1000,
+        y = preprocessed_data$Median.duration,
         word = preprocessed_data$Word
     )
 
