@@ -1,0 +1,55 @@
+In order to analyze the two predictions on word length, we will use the dataset used in two recent studies \cite{petrini2022optimality} \cite{petrini2023direct}. In addition, we will study word length as the length in characters and as the duration in spoken form.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{c|c|c|c}
+        Language & Family & Script & Length measure \\ \hline
+        English & Indo-European & Latin & Characters and duration \\
+        Spanish & Indo-European & Latin & Characters and duration \\
+        Catalan & Indo-European & Latin & Characters and duration \\
+        Arabic & Afro-Asiatic & Arabic & Characters and duration \\
+        Indonesian & Austronesian & Latin & Characters and duration \\
+        Turkish & Turkic & Latin & Characters and duration \\
+        Chinese & Sino-Tibetan & Multiple & Characters, strokes and pinyin characters \\
+        Tamil & Dravidian & Tamil & Characters and duration \\
+        Basque & Language isolate & Latin & Characters and duration \\
+    \end{tabular}
+    \caption{Analyzed languages with their families and scripts.}
+    \label{tab:languages}
+\end{table}
+
+The set of languages shown in \cref{tab:languages} have been chosen as a wide representation of languages that encompass different families and script types. We will analyze the same languages as previous studies to validate our results and will extend it to the rest of the languages.
+
+For most of the languages, we will analyze word length as character length and as word duration, except for the case of Chinese. For Chinese word length is measured in character length, strokes, and romanized characters (pinyin) length. Duration analysis was not possible due to lack of data.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{c|c}
+        Language & Data sources \\ \hline
+        English & CV \& PUD \\
+        Spanish & CV \& PUD \\
+        Catalan & CV \\
+        Arabic & CV \& PUD \\
+        Indonesian & CV \& PUD \\
+        Turkish & CV \& PUD \\
+        Chinese & PUD (by characters, strokes and pinyin characters) \\
+        Tamil & CV \\
+        Basque & CV \\
+    \end{tabular}
+    \caption{Analyzed languages with their data sources.}
+    \label{tab:languagesdata}
+\end{table}
+
+In most cases, the data is obtained from Common Voice Forced Alignments\cite{JRMeyer} (referred to as CV from now on) and Parallel Universal Dependencies\cite{UniversalDependencies} (referred to as PUD from now on). CV data contains information about frequencies by word, and words have specified their length both in length of characters and duration. Instead, PUD data has information about frequencies by word, but words only have their length specified by the length of characters not by duration. \cref{tab:languagesdata} displays each of the chosen languages and the data sources used for the analysis. 
+
+The analysis has been performed in 2 steps. Firstly, a preprocessing step with a Python script. This initial step takes the data \cite{IQL-course} and converts it into a common format (except for some missing data for PUD) for both sources. We took the median duration rather than the average to reduce the effect of outliers. After the preprocessing is completed, the processing stage takes place, which is done using an R script.
+
+The processing part iterates over the files, and for each file, it does 2 analyses, one using length data and frequency rank, and another one for length data and relative frequency. For the analysis of relative frequency, we multiplied the data by 1,000,000,000, therefore making it parts per million rather than a typical percentage to avoid undesired behavior when applying the log function.
+
+The analysis consists, in the first place, of performing multiplicative binning on the data to avoid bias later on. Since the density of data varies a lot based on the length and frequency, applying linear regression directly on raw data would give a result that does not take into account the whole range and is only accurate in the parts where data is more dense. To perform the multiplicative binning, we took equispaced points in the log scale for the x-axis and computed the median of all the y values that belong to the same bin (equispaced point) in the x-axis.
+
+After the multiplicative binning, we obtained an unbiased representation of the data which allowed us to perform a Theil-Sen robust linear regression on the binned data logged on the x-axis.
+
+In the case of languages that were in the CV dataset, which included word duration data in seconds, we also performed the same 2 analyses but using the duration as length instead of the length in characters. For each of these analyses, we printed the model's coefficients (slope and intercept) and the p-values, we also plotted the raw data with a few word labels, the binned data, and the linear regression line.
+
+All the code used to do the analysis and generate the data which will be presented in the next section is available in a Github repository \cite{IQL-code}.

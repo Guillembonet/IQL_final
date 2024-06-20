@@ -1,0 +1,35 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[l3]{csvsimple}
+\usepackage[noabbrev,capitalize]{cleveref}
+\usepackage{float}
+\usepackage{subcaption}
+
+\title{Laws of word length}
+\author{Guillem Bonet}
+\date{June 2024}
+
+\begin{document}
+  \maketitle
+  \section{Introduction}
+    \input{Sections/Intro}
+  \section{Materials and Methodology}
+   \input{Sections/Methods}
+  \section{Results}
+   \input{Sections/Results}
+  \section{Discussion}
+    \input{Sections/Discussion}
+
+\bibliographystyle{IEEEtran}
+\nocite{*}
+\newpage
+\bibliography{references}
+
+\newpage
+\appendix
+\section{Plots}
+\label{sec:annex}
+\input{Sections/Annex}
+
+\end{document}
+
