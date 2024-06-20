@@ -58,7 +58,7 @@ get_linear_regression <- function(binned_data){
     return(predicted_data)
 }
 
-process_data <- function(data, xLabel, yLabel, title, binning){
+process_data <- function(data, xLabel, yLabel, title, filename){
     binned_data <- get_binned_data(data)
     lr_data <- get_linear_regression(binned_data)
 
@@ -71,11 +71,12 @@ process_data <- function(data, xLabel, yLabel, title, binning){
         geom_label_repel(data=label_data, aes(label=word, x=log(x), y=y), family="Arial Unicode",
                   label.size = NA, label.padding=.1, na.rm=TRUE, fill = alpha(c("white"),0.5)) +
         geom_point(data = binned_data, aes(x=log(x), y=y), color="red") +
-        geom_line(data = lr_data, aes(x=x, y=y)) +
+        geom_line(data = lr_data, aes(x=x, y=y), color="green") +
         ylim(0, NA) +
-        labs(x=xLabel, y=yLabel, title=title) +
+        labs(x=xLabel, y=yLabel) +
         theme_minimal()
 
+    ggsave(paste("../data/plots/",filename,".pdf", sep=""), plot = p)
     print(p)
 }
 
@@ -109,12 +110,14 @@ for (file in csv_files){
 
 
     title <- paste(language$Language, "(l ~ log i) based on character length", paste("(source: ", source, ")", sep=""))
+    filename <- paste(language$Language, "_logi_cl_", source, sep="")
     if (type != ""){
         title <- paste(language$Language, "(l ~ log i) based on character length", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+        filename <- paste(language$Language, "_logi_cl_", source, "_", type, sep="")
     }
 
     print(title)
-    process_data(data, "frequency rank", "length of characters", title, TRUE)
+    process_data(data, "frequency rank", "length of characters", title, filename)
 
     data <- data.frame(
         x = preprocessed_data$Relative.frequency * 1000000,
@@ -123,12 +126,14 @@ for (file in csv_files){
     )
 
     title <- paste(language$Language, "(l ~ -log p) based on character length", paste("(source: ", source, ")", sep=""))
+    filename <- paste(language$Language, "_logp_cl_", source, sep="")
     if (type != ""){
         title <- paste(language$Language, "(l ~ -log p) based on character length", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+        filename <- paste(language$Language, "_logp_cl_", source, "_", type, sep="")
     }
 
     print(title)
-    process_data(data, "relative frequency", "length of characters", title, FALSE)
+    process_data(data, "relative frequency", "length of characters", title, filename)
 
     # Analysis based on duration
     if (!("Median.duration" %in% names(preprocessed_data))) {
@@ -142,12 +147,14 @@ for (file in csv_files){
     )
 
     title <- paste(language$Language, "(l ~ log i) based on duration", paste("(source: ", source, ")", sep=""))
+    filename <- paste(language$Language, "_logi_d_", source, sep="")
     if (type != ""){
         title <- paste(language$Language, "(l ~ log i) based on duration", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+        filename <- paste(language$Language, "_logi_d_", source, "_", type, sep="")
     }
 
     print(title)
-    process_data(data, "frequency rank", "duration", title)
+    process_data(data, "frequency rank", "duration", title, filename)
 
     data <- data.frame(
         x = preprocessed_data$Relative.frequency * 1000000,
@@ -156,11 +163,13 @@ for (file in csv_files){
     )
 
     title <- paste(language$Language, "(l ~ -log p) based on duration", paste("(source: ", source, ")", sep=""))
+    filename <- paste(language$Language, "_logp_d_", source, sep="")
     if (type != ""){
         title <- paste(language$Language, "(l ~ -log p) based on duration", paste("(source: ", source, ") (type: ", type, ")", sep=""))
+        filename <- paste(language$Language, "_logp_d_", source, "_", type, sep="")
     }
 
     print(title)
-    process_data(data, "relative frequency", "duration", title)
+    process_data(data, "relative frequency", "duration", title, filename)
 }
 ```
